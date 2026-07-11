@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ChatConnect – Real-Time Online Chat Application
 
 A full-stack MERN (MongoDB, Express, React, Node.js) real-time chat app with JWT auth,
@@ -119,3 +120,6 @@ The app runs on `http://localhost:5173`.
 - Push notifications
 - Message deletion/editing
 - Dark mode
+=======
+# chat-connect
+>>>>>>> 317668feb36514c9d08b7b8fb8df66a1e346e0d5
