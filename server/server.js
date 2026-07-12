@@ -24,13 +24,15 @@ const io = new Server(server, {
     origin: CLIENT_URL,
     methods: ["GET", "POST"],
   },
+  // Required for Vercel / serverless environments
+  transports: ["polling"],
 });
 
 // Make io and onlineUsers accessible inside controllers (req.app.get("io"))
 app.set("io", io);
 app.set("onlineUsers", onlineUsers);
 
-app.use(cors({ origin: CLIENT_URL }));
+app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -54,7 +56,12 @@ app.use((err, req, res, next) => {
 
 initSocket(io);
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Export for Vercel serverless; also listen locally for dev
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = server;

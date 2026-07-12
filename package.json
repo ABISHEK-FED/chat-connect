@@ -1,5 +1,11 @@
 {
-  "dependencies": {
-    "react-router-dom": "^7.18.1"
+  "name": "chatconnect",
+  "version": "1.0.0",
+  "description": "ChatConnect - Real-Time Chat App",
+  "scripts": {
+    "dev": "cd server && npm run dev",
+    "start": "cd server && npm start",
+    "build": "cd client && npm install && npm run build",
+    "install:all": "cd client && npm install && cd ../server && npm install"
   }
 }
