@@ -14,7 +14,7 @@ const Sidebar = ({ selectedUser, onSelectUser }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const { data } = await userAPI.getAll();
+        const { data } = await userAPI.getUsers(search);
         setUsers(data);
       } catch (err) {
         console.error(err);
