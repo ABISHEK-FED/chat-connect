@@ -18,44 +18,34 @@ const Chat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Fetch conversation whenever a new user is selected
   useEffect(() => {
     if (!selectedUser) return;
-
     const fetchMessages = async () => {
       setLoadingMessages(true);
       try {
         const { data } = await messageAPI.getConversation(selectedUser._id);
         setMessages(data);
-      } catch (err) {
+      } catch {
         toast.error("Failed to load messages");
       } finally {
         setLoadingMessages(false);
       }
     };
-
     fetchMessages();
     setIsTyping(false);
   }, [selectedUser]);
 
-  // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Listen for incoming real-time messages and typing events
   useEffect(() => {
     if (!socket) return;
 
     const handleReceiveMessage = (message) => {
       const senderId = message.senderId?._id || message.senderId;
       const receiverId = message.receiverId?._id || message.receiverId;
-
-      // only add to the open conversation if it belongs to it
-      if (
-        selectedUser &&
-        (senderId === selectedUser._id || receiverId === selectedUser._id)
-      ) {
+      if (selectedUser && (senderId === selectedUser._id || receiverId === selectedUser._id)) {
         setMessages((prev) => [...prev, message]);
       } else {
         toast(`New message from ${message.senderId?.name || "someone"}`, { icon: "💬" });
@@ -86,7 +76,7 @@ const Chat = () => {
     try {
       const { data } = await messageAPI.send({ receiverId: selectedUser._id, message: text });
       setMessages((prev) => [...prev, data]);
-    } catch (err) {
+    } catch {
       toast.error("Failed to send message");
     }
   };
@@ -104,42 +94,111 @@ const Chat = () => {
   }, [socket, selectedUser, user]);
 
   return (
-    <div className="h-screen flex bg-gray-50 overflow-hidden">
-      <div className={`${selectedUser ? "hidden sm:flex" : "flex"} h-full`}>
+    <div
+      className="h-screen flex overflow-hidden"
+      style={{ background: "#0b0f1a" }}
+    >
+      {/* ── Sidebar ── */}
+      <div className={`${selectedUser ? "hidden sm:flex" : "flex"} h-full shrink-0`}>
         <Sidebar selectedUser={selectedUser} onSelectUser={setSelectedUser} />
       </div>
 
-      <div className={`${selectedUser ? "flex" : "hidden sm:flex"} flex-1 flex-col h-full`}>
+      {/* ── Main chat area ── */}
+      <div className={`${selectedUser ? "flex" : "hidden sm:flex"} flex-1 flex-col h-full min-w-0`}>
         {!selectedUser ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 px-6">
-            <div className="text-6xl mb-4">💬</div>
-            <p className="text-lg font-medium text-gray-500">Select a user to start chatting</p>
-            <p className="text-sm text-gray-400 mt-1">Your messages will appear here</p>
+          /* ── Empty state ── */
+          <div
+            className="flex-1 flex flex-col items-center justify-center px-6 relative overflow-hidden"
+            style={{
+              background:
+                "radial-gradient(ellipse at 30% 40%, rgba(0,192,109,0.06) 0%, transparent 55%), radial-gradient(ellipse at 75% 65%, rgba(0,180,255,0.04) 0%, transparent 55%), #0b0f1a",
+            }}
+          >
+            {/* Faint grid */}
+            <div
+              className="absolute inset-0 opacity-[0.025] pointer-events-none"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
+                backgroundSize: "50px 50px",
+              }}
+            />
+
+            {/* Glow orb behind icon */}
+            <div
+              className="absolute rounded-full blur-3xl pointer-events-none"
+              style={{ width: 300, height: 300, background: "radial-gradient(circle, rgba(0,192,109,0.1) 0%, transparent 70%)" }}
+            />
+
+            <div className="relative z-10 flex flex-col items-center text-center animate-fadeUp">
+              <div
+                className="text-6xl mb-6 animate-float select-none"
+                style={{ filter: "drop-shadow(0 0 20px rgba(0,192,109,0.4))" }}
+              >
+                💬
+              </div>
+              <h2 className="text-xl font-bold text-gradient mb-2">
+                Start a conversation
+              </h2>
+              <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
+                Select someone from the sidebar and your messages will appear here.
+              </p>
+
+              {/* Decorative dots */}
+              <div className="flex items-center gap-2 mt-6">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{
+                      background: "rgba(0,192,109,0.4)",
+                      animation: `typingBounce 1.5s ease-in-out ${i * 0.3}s infinite`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2">
+            {/* ── Chat header (with mobile back button) ── */}
+            <div className="flex items-center shrink-0">
               <button
-                className="sm:hidden px-3 py-3 text-gray-500"
+                className="sm:hidden flex items-center justify-center h-full px-3 py-4 text-slate-400 hover:text-primary-400 transition-colors"
                 onClick={() => setSelectedUser(null)}
                 aria-label="Back"
+                style={{ borderRight: "1px solid rgba(255,255,255,0.06)" }}
               >
-                ←
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
               </button>
               <div className="flex-1">
                 <ChatHeader selectedUser={selectedUser} isTyping={isTyping} />
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 bg-[#efeae2]">
+            {/* ── Messages ── */}
+            <div
+              className="flex-1 overflow-y-auto px-4 py-6 chat-bg"
+            >
               {loadingMessages ? (
-                <div className="flex justify-center py-10">
+                <div className="flex justify-center py-12">
                   <Spinner />
                 </div>
               ) : messages.length === 0 ? (
-                <p className="text-center text-gray-400 text-sm mt-10">
-                  No messages yet. Say hello to {selectedUser.name}!
-                </p>
+                <div className="flex flex-col items-center justify-center h-full text-center animate-fadeIn">
+                  <div
+                    className="text-4xl mb-3 animate-float select-none"
+                    style={{ filter: "drop-shadow(0 0 12px rgba(0,192,109,0.3))" }}
+                  >
+                    👋
+                  </div>
+                  <p className="text-slate-500 text-sm">
+                    No messages yet. Say hello to{" "}
+                    <span className="text-primary-400 font-medium">{selectedUser.name}</span>!
+                  </p>
+                </div>
               ) : (
                 messages.map((msg) => (
                   <MessageBubble
@@ -149,10 +208,35 @@ const Chat = () => {
                   />
                 ))
               )}
+
+              {/* Typing bubble */}
+              {isTyping && (
+                <div className="flex justify-start mb-3 animate-popIn">
+                  <div
+                    className="flex items-center gap-1 px-4 py-3 rounded-2xl rounded-bl-sm"
+                    style={{
+                      background: "rgba(255,255,255,0.07)",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      boxShadow: "0 2px 16px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    <span className="typing-dot" />
+                    <span className="typing-dot" />
+                    <span className="typing-dot" />
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
-            <MessageInput onSend={handleSend} onTyping={handleTyping} onStopTyping={handleStopTyping} />
+            {/* ── Input ── */}
+            <MessageInput
+              onSend={handleSend}
+              onTyping={handleTyping}
+              onStopTyping={handleStopTyping}
+            />
           </>
         )}
       </div>
